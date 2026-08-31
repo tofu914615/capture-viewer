@@ -7,12 +7,10 @@
 </head>
 <body>
 
-<!-- 映像表示領域 -->
 <div id="video-container">
     <video autoplay id="v" playsinline></video>
 </div>
 
-<!-- グラスモーフィズム調UI -->
 <div id="controls">
     <!-- 1段目：映像関係 -->
     <div class="controls-row">
@@ -56,6 +54,12 @@
 
     let currentStream;
     let isMuted = false;
+    
+    // 音量メーター用の変数
+    let audioContext;
+    let analyser;
+    let microphone;
+    let animationId;
 
     function loadSettings() {
         const savedVideo = localStorage.getItem('capture_video');
@@ -110,6 +114,53 @@
         }
     }
 
+    // 音量メーター（インジケーター）の処理を開始する関数
+    function startAudioMeter(stream) {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+
+        if (analyser) analyser.disconnect();
+        if (microphone) microphone.disconnect();
+        if (animationId) cancelAnimationFrame(animationId);
+
+        if (stream.getAudioTracks().length === 0) return;
+
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.5; // メーターの動きの滑らかさ
+
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function updateMeter() {
+            if (isMuted) {
+                // ミュート時はメーターを0%にする
+                volumeSlider.style.setProperty('--meter-level', '0%');
+            } else {
+                analyser.getByteFrequencyData(dataArray);
+                let maxVolume = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    if (dataArray[i] > maxVolume) {
+                        maxVolume = dataArray[i];
+                    }
+                }
+                // 0〜255の値を0%〜100%に変換
+                const level = Math.min(100, Math.round((maxVolume / 255) * 100));
+                // CSSの変数に値を渡す
+                volumeSlider.style.setProperty('--meter-level', level + '%');
+            }
+            animationId = requestAnimationFrame(updateMeter);
+        }
+
+        updateMeter();
+    }
+
     async function startStream() {
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
@@ -143,6 +194,10 @@
             if (audioTracks.length > 0) {
                 audioTracks[0].enabled = !isMuted;
             }
+
+            // メーター処理を開始
+            startAudioMeter(currentStream);
+
         } catch (error) {
             console.error('ストリーム開始エラー:', error);
             alert('選択した設定で映像を取得できませんでした。');
@@ -166,9 +221,11 @@
             if (isMuted) {
                 muteBtn.textContent = '音声をオンにする';
                 muteBtn.classList.add('muted');
+                volumeSlider.disabled = true; // スライダーを操作不可にする
             } else {
                 muteBtn.textContent = '音声をオフにする';
                 muteBtn.classList.remove('muted');
+                volumeSlider.disabled = false; // スライダーを操作可能にする
             }
         }
     });
@@ -183,9 +240,12 @@
         }
     });
 
-    videoSelect.addEventListener('change', startStream);
-    audioSelect.addEventListener('change', startStream);
-    resolutionSelect.addEventListener('change', startStream);
+    // プルダウン変更時にもAudioContextを再開する（ブラウザのセキュリティ制限対策）
+    const resumeAudio = () => { if(audioContext && audioContext.state === 'suspended') audioContext.resume(); };
+
+    videoSelect.addEventListener('change', () => { resumeAudio(); startStream(); });
+    audioSelect.addEventListener('change', () => { resumeAudio(); startStream(); });
+    resolutionSelect.addEventListener('change', () => { resumeAudio(); startStream(); });
 
     getDevices().then(startStream);
 
