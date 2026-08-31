@@ -1,4 +1,3 @@
-/* 画面全体の設定 */
 body { 
     margin: 0; 
     padding: 0; 
@@ -11,14 +10,13 @@ body {
     align-items: center; 
 }
 
-/* 映像エリアのコンテナ */
 #video-container { 
     width: 100%; 
     height: 100%; 
     display: flex; 
     justify-content: center; 
     align-items: center;
-    padding-bottom: 120px; /* パネルと被らないように余白を少し拡大 */
+    padding-bottom: 120px; 
     box-sizing: border-box;
 }
 
@@ -30,7 +28,6 @@ video {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8); 
 }
 
-/* グラスモーフィズム調のコントロールパネル */
 #controls {
     position: absolute;
     bottom: 30px;
@@ -38,7 +35,7 @@ video {
     transform: translateX(-50%);
     padding: 20px 25px;
     display: flex;
-    flex-direction: column; /* 要素を縦並び（行）にする */
+    flex-direction: column; 
     gap: 15px;
     border-radius: 16px;
     background: rgba(40, 40, 40, 0.7);
@@ -49,11 +46,10 @@ video {
     z-index: 10;
     color: #e0e0e0;
     width: 90%;
-    max-width: 900px; /* 横に広がりすぎないように上限を設定 */
+    max-width: 900px; 
     box-sizing: border-box;
 }
 
-/* 各行のレイアウト */
 .controls-row {
     display: flex;
     flex-wrap: wrap;
@@ -63,22 +59,20 @@ video {
     width: 100%;
 }
 
-/* ラベルと入力フォームのグループ化（途中で改行されないようにする） */
 .control-group {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex: 1 1 220px; /* スペースに応じて伸縮する */
-    min-width: 0; /* flexアイテムが親要素をはみ出すのを防ぐ */
+    flex: 1 1 220px; 
+    min-width: 0; 
 }
 
 .control-group label { 
     font-size: 13px; 
     color: #ddd; 
-    white-space: nowrap; /* ラベルの改行防止 */
+    white-space: nowrap; 
 }
 
-/* プルダウンメニューのデザイン */
 .control-group select {
     width: 100%;
     padding: 8px 12px;
@@ -90,12 +84,11 @@ video {
     cursor: pointer;
     transition: all 0.2s ease;
     outline: none;
-    text-overflow: ellipsis; /* 長すぎる文字を「...」で省略 */
+    text-overflow: ellipsis; 
     white-space: nowrap;
     overflow: hidden;
 }
 
-/* ボタンのデザイン */
 button {
     padding: 8px 16px;
     font-size: 14px;
@@ -127,29 +120,34 @@ select option {
     background: rgba(220, 53, 69, 0.9); 
 }
 
-/* 音量スライダー固有のスタイル */
+/* 音量スライダーとメーター機能のスタイル */
 .volume-container {
-    flex: 0 1 auto; /* スライダーは広がりすぎないように固定 */
+    flex: 0 1 auto; 
 }
 
 input[type="range"] {
     -webkit-appearance: none;
     width: 120px;
     background: transparent;
+    --meter-level: 0%; /* JSからこの値を動的に受け取る */
 }
 
 input[type="range"]:focus { 
     outline: none; 
 }
 
+/* スライダーの背景（メーター） */
 input[type="range"]::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.3);
+    /* 動的なメーターの色（青）と、空背景（白）のグラデーション */
+    background: linear-gradient(to right, #00a8ff var(--meter-level), rgba(255, 255, 255, 0.3) var(--meter-level));
     border-radius: 4px;
+    transition: background 0.05s linear; /* メーターの動きを滑らかにする */
 }
 
+/* スライダーのつまみ */
 input[type="range"]::-webkit-slider-thumb {
     height: 14px;
     width: 14px;
@@ -159,4 +157,20 @@ input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     margin-top: -4px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* ---- ミュート時（無効化）のグレーアウトスタイル ---- */
+input[type="range"]:disabled {
+    cursor: not-allowed;
+}
+
+input[type="range"]:disabled::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.1); /* 背景を暗くする */
+    cursor: not-allowed;
+}
+
+input[type="range"]:disabled::-webkit-slider-thumb {
+    background: #777; /* つまみをグレーにする */
+    box-shadow: none;
+    cursor: not-allowed;
 }
