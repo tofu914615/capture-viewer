@@ -1,185 +1,167 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
     <title>Capture Viewer</title>
     <style>
         /* 画面全体のレイアウト設定 */
-        body {
-            margin: 0;
-            padding: 0;
-            background: #111;
-            color: #fff;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
+        body { margin: 0; padding: 0; background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        
         /* コントロールパネルのデザイン */
-        #controls {
-            padding: 15px;
-            background: #222;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            border-bottom: 1px solid #444;
-        }
-
+        #controls { padding: 15px; background: #222; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #444; }
+        
         /* 映像表示エリアのデザイン */
-        #video-container {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-        }
-
-        video {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
+        #video-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #000; }
+        video { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
         /* フォーム部品のデザイン */
-        button,
-        select {
-            padding: 6px 12px;
-            font-size: 14px;
-            background: #444;
-            color: #fff;
-            border: 1px solid #666;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        button:hover,
-        select:hover {
-            background: #555;
-        }
+        button, select { padding: 6px 12px; font-size: 14px; background: #444; color: #fff; border: 1px solid #666; border-radius: 4px; cursor: pointer; }
+        button:hover, select:hover { background: #555; }
+        
+        /* ミュート状態のボタンデザイン */
+        #mute-btn.muted { background: #cc0000; border-color: #aa0000; }
+        #mute-btn.muted:hover { background: #ee0000; }
     </style>
 </head>
-
 <body>
 
-    <!-- 設定項目UI -->
-    <div id="controls">
-        <label for="video-source">映像入力:</label>
-        <select id="video-source"></select>
+<!-- 設定項目UI -->
+<div id="controls">
+    <label for="video-source">映像入力:</label>
+    <select id="video-source"></select>
 
-        <label for="audio-source">音声入力:</label>
-        <select id="audio-source"></select>
+    <label for="audio-source">音声入力:</label>
+    <select id="audio-source"></select>
 
-        <label for="resolution">解像度:</label>
-        <select id="resolution">
-            <option value="1920x1080">1080p (1920x1080)</option>
-            <option value="1280x720">720p (1280x720)</option>
-            <option value="640x480">480p (640x480)</option>
-        </select>
+    <label for="resolution">解像度:</label>
+    <select id="resolution">
+        <option value="1920x1080">1080p (1920x1080)</option>
+        <option value="1280x720">720p (1280x720)</option>
+        <option value="640x480">480p (640x480)</option>
+    </select>
 
-        <button id="start-btn">設定を適用</button>
-        <button id="fullscreen-btn">全画面表示</button>
-    </div>
+    <button id="start-btn">設定を適用</button>
+    <button id="mute-btn">音声をオフにする</button>
+    <button id="fullscreen-btn">全画面表示</button>
+</div>
 
-    <!-- 映像表示領域 -->
-    <div id="video-container">
-        <video autoplay id="v" playsinline></video>
-    </div>
+<!-- 映像表示領域 -->
+<div id="video-container">
+    <video autoplay id="v" playsinline></video>
+</div>
 
-    <script>
-        const videoElement = document.getElementById('v');
-        const videoSelect = document.getElementById('video-source');
-        const audioSelect = document.getElementById('audio-source');
-        const resolutionSelect = document.getElementById('resolution');
-        const startBtn = document.getElementById('start-btn');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
+<script>
+    const videoElement = document.getElementById('v');
+    const videoSelect = document.getElementById('video-source');
+    const audioSelect = document.getElementById('audio-source');
+    const resolutionSelect = document.getElementById('resolution');
+    const startBtn = document.getElementById('start-btn');
+    const muteBtn = document.getElementById('mute-btn');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
 
-        let currentStream;
+    let currentStream;
+    let isMuted = false;
 
-        // 1. 接続されているデバイスを取得し、プルダウンに追加する
-        async function getDevices() {
-            try {
-                // デバイスの正確な名前を取得するため、一度仮のアクセス要求を行います
-                await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    // 1. 接続されているデバイスを取得し、プルダウンに追加する
+    async function getDevices() {
+        try {
+            await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            
+            videoSelect.innerHTML = '';
+            audioSelect.innerHTML = '';
 
-                const devices = await navigator.mediaDevices.enumerateDevices();
-
-                videoSelect.innerHTML = '';
-                audioSelect.innerHTML = '';
-
-                devices.forEach(device => {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    if (device.kind === 'videoinput') {
-                        option.text = device.label || `カメラ ${videoSelect.length + 1}`;
-                        videoSelect.appendChild(option);
-                    } else if (device.kind === 'audioinput') {
-                        option.text = device.label || `マイク ${audioSelect.length + 1}`;
-                        audioSelect.appendChild(option);
-                    }
-                });
-            } catch (error) {
-                console.error('デバイスの取得エラー:', error);
-                alert('カメラ・マイクへのアクセスが許可されていないか、デバイスが見つかりません。ブラウザの権限設定を確認してください。');
-            }
-        }
-
-        // 2. 選択された設定で映像と音声の取得を開始する
-        async function startStream() {
-            // すでに映像を取得中の場合は一度停止する
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
-
-            const videoSource = videoSelect.value;
-            const audioSource = audioSelect.value;
-            const [width, height] = resolutionSelect.value.split('x').map(Number);
-
-            const constraints = {
-                video: {
-                    deviceId: videoSource ? { exact: videoSource } : undefined,
-                    width: { ideal: width },
-                    height: { ideal: height }
-                },
-                audio: {
-                    deviceId: audioSource ? { exact: audioSource } : undefined,
-                    // キャプチャカードの音をそのまま流すため、ブラウザの音声補正を無効化
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: false
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                if (device.kind === 'videoinput') {
+                    option.text = device.label || `カメラ ${videoSelect.length + 1}`;
+                    videoSelect.appendChild(option);
+                } else if (device.kind === 'audioinput') {
+                    option.text = device.label || `マイク ${audioSelect.length + 1}`;
+                    audioSelect.appendChild(option);
                 }
-            };
+            });
+        } catch (error) {
+            console.error('デバイスの取得エラー:', error);
+            alert('カメラ・マイクへのアクセスが許可されていないか、デバイスが見つかりません。');
+        }
+    }
 
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                videoElement.srcObject = currentStream;
-            } catch (error) {
-                console.error('ストリーム開始エラー:', error);
-                alert('選択した設定で映像を取得できませんでした。解像度がデバイスに対応していない可能性があります。');
-            }
+    // 2. 選択された設定で映像と音声の取得を開始する
+    async function startStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
         }
 
-        // 3. 全画面表示ボタンの挙動
-        fullscreenBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                // video要素のみを全画面化します
-                videoElement.requestFullscreen().catch(err => {
-                    alert(`全画面表示エラー: ${err.message}`);
-                });
-            } else {
-                document.exitFullscreen();
+        const videoSource = videoSelect.value;
+        const audioSource = audioSelect.value;
+        const [width, height] = resolutionSelect.value.split('x').map(Number);
+
+        const constraints = {
+            video: {
+                deviceId: videoSource ? { exact: videoSource } : undefined,
+                width: { ideal: width },
+                height: { ideal: height }
+            },
+            audio: {
+                deviceId: audioSource ? { exact: audioSource } : undefined,
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
             }
-        });
+        };
 
-        // 設定適用ボタンが押された時の処理
-        startBtn.addEventListener('click', startStream);
+        try {
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            videoElement.srcObject = currentStream;
+            
+            // 設定適用時、現在のミュート状態を引き継ぐ
+            const audioTracks = currentStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                audioTracks[0].enabled = !isMuted;
+            }
+        } catch (error) {
+            console.error('ストリーム開始エラー:', error);
+            alert('選択した設定で映像を取得できませんでした。');
+        }
+    }
 
-        // ページ読み込み時にデバイスリストを取得し、そのまま最初のストリームを開始する
-        getDevices().then(startStream);
+    // 3. ミュートボタンの挙動
+    muteBtn.addEventListener('click', () => {
+        if (!currentStream) return;
+        
+        const audioTracks = currentStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            isMuted = !isMuted;
+            audioTracks[0].enabled = !isMuted; // 音声トラックの有効/無効を切り替え
+            
+            // ボタンのテキストと見た目を変更
+            if (isMuted) {
+                muteBtn.textContent = '音声をオンにする';
+                muteBtn.classList.add('muted');
+            } else {
+                muteBtn.textContent = '音声をオフにする';
+                muteBtn.classList.remove('muted');
+            }
+        }
+    });
 
-    </script>
+    // 4. 全画面表示ボタンの挙動
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            videoElement.requestFullscreen().catch(err => {
+                alert(`全画面表示エラー: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    // イベントリスナーの登録と初期化
+    startBtn.addEventListener('click', startStream);
+    getDevices().then(startStream);
+
+</script>
 </body>
-
 </html>
