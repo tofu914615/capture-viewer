@@ -22,7 +22,6 @@ function loadSettings() {
 
     if (savedVideo) videoSelect.value = savedVideo;
     if (savedAudio) audioSelect.value = savedAudio;
-    // 保存された解像度がない場合はHTML側のデフォルト(1920x1080)が適用される
     if (savedResolution) resolutionSelect.value = savedResolution;
     if (savedVolume !== null) {
         volumeSlider.value = savedVolume;
@@ -103,10 +102,10 @@ function startAudioMeter(stream) {
             }
             
             let rms = Math.sqrt(sumSquares / dataArray.length);
-            const sensitivity = 300; 
+            const sensitivity = 250; 
             let level = Math.min(100, Math.round(rms * sensitivity));
             
-            if (level < 5) {
+            if (level < 10) {
                 level = 0;
             }
 
@@ -148,7 +147,6 @@ async function startStream() {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
         
-        // CSSを操作して、映像の表示枠を選択した解像度の比率に固定し、余分な部分をカット（cover）する
         videoElement.style.aspectRatio = `${width} / ${height}`;
         videoElement.style.objectFit = 'cover';
         
