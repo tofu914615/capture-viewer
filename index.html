@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Capture Viewer</title>
-    <!-- CSSファイルの読み込み -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,9 +20,11 @@
         <div class="control-group">
             <label for="resolution">解像度:</label>
             <select id="resolution">
-                <option value="1920x1080">1080p (1920x1080)</option>
-                <option value="1280x720">720p (1280x720)</option>
-                <option value="640x480">480p (640x480)</option>
+                <option value="1920x1080" selected>1080p (1920x1080) - 16:9</option>
+                <option value="1280x720">720p (1280x720) - 16:9</option>
+                <option value="1440x1080">1440x1080 - 4:3</option>
+                <option value="1024x768">1024x768 - 4:3</option>
+                <option value="640x480">480p (640x480) - 4:3</option>
             </select>
         </div>
         <button id="fullscreen-btn">全画面表示</button>
@@ -42,7 +43,6 @@
     </div>
 </div>
 
-<!-- JSファイルの読み込み（bodyの最後に追加） -->
 <script src="script.js"></script>
 </body>
 </html>
