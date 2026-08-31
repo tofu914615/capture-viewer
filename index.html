@@ -14,15 +14,11 @@
 
 <!-- グラスモーフィズム調UI -->
 <div id="controls">
-    <!-- 上段：入力デバイスと解像度 -->
+    <!-- 1段目：映像関係 -->
     <div class="controls-row">
         <div class="control-group">
             <label for="video-source">映像入力:</label>
             <select id="video-source"></select>
-        </div>
-        <div class="control-group">
-            <label for="audio-source">音声入力:</label>
-            <select id="audio-source"></select>
         </div>
         <div class="control-group">
             <label for="resolution">解像度:</label>
@@ -32,16 +28,20 @@
                 <option value="640x480">480p (640x480)</option>
             </select>
         </div>
+        <button id="fullscreen-btn">全画面表示</button>
     </div>
     
-    <!-- 下段：操作ボタンと音量 -->
+    <!-- 2段目：音声関係 -->
     <div class="controls-row">
+        <div class="control-group">
+            <label for="audio-source">音声入力:</label>
+            <select id="audio-source"></select>
+        </div>
         <div class="control-group volume-container">
             <label for="volume-slider">音量:</label>
             <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
         </div>
         <button id="mute-btn">音声をオフにする</button>
-        <button id="fullscreen-btn">全画面表示</button>
     </div>
 </div>
 
