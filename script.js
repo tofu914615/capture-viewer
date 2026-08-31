@@ -9,7 +9,6 @@ const fullscreenBtn = document.getElementById('fullscreen-btn');
 let currentStream;
 let isMuted = false;
 
-// 音量メーター用の変数
 let audioContext;
 let analyser;
 let microphone;
@@ -88,7 +87,6 @@ function startAudioMeter(stream) {
     microphone = audioContext.createMediaStreamSource(stream);
     microphone.connect(analyser);
 
-    // 時間領域（波形）のデータを取得する配列
     const dataArray = new Uint8Array(analyser.fftSize);
 
     function updateMeter() {
@@ -99,19 +97,14 @@ function startAudioMeter(stream) {
             
             let sumSquares = 0;
             for (let i = 0; i < dataArray.length; i++) {
-                // 128を中心に波形が振れるため、-1.0 〜 1.0 の範囲に正規化
                 let norm = (dataArray[i] / 128.0) - 1.0;
                 sumSquares += norm * norm;
             }
             
-            // 二乗平均平方根（RMS）を計算して全体的な音量を算出
             let rms = Math.sqrt(sumSquares / dataArray.length);
-            
-            // 感度調整（数値が大きいほどメーターが右に振れやすくなる）
             const sensitivity = 300; 
             let level = Math.min(100, Math.round(rms * sensitivity));
             
-            // 足切り（しきい値）：計算結果が5%以下の微細なノイズは0%にする
             if (level < 5) {
                 level = 0;
             }
@@ -139,7 +132,8 @@ async function startStream() {
         video: {
             deviceId: videoSource ? { exact: videoSource } : undefined,
             width: { ideal: width },
-            height: { ideal: height }
+            height: { ideal: height },
+            aspectRatio: { ideal: width / height } // ここでアスペクト比を明示的に指定
         },
         audio: {
             deviceId: audioSource ? { exact: audioSource } : undefined,
