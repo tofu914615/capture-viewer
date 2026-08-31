@@ -18,11 +18,10 @@ body {
     display: flex; 
     justify-content: center; 
     align-items: center;
-    padding-bottom: 100px; 
+    padding-bottom: 120px; /* パネルと被らないように余白を少し拡大 */
     box-sizing: border-box;
 }
 
-/* 枠線を削除し、影のみを残す */
 video { 
     max-width: 85%; 
     max-height: 85%; 
@@ -34,32 +33,55 @@ video {
 /* グラスモーフィズム調のコントロールパネル */
 #controls {
     position: absolute;
-    bottom: 40px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 15px 25px;
+    padding: 20px 25px;
     display: flex;
+    flex-direction: column; /* 要素を縦並び（行）にする */
     gap: 15px;
-    align-items: center;
-    flex-wrap: wrap;
     border-radius: 16px;
-    background: rgba(40, 40, 40, 0.6);
+    background: rgba(40, 40, 40, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 10;
     color: #e0e0e0;
+    width: 90%;
+    max-width: 900px; /* 横に広がりすぎないように上限を設定 */
+    box-sizing: border-box;
 }
 
-/* フォーム部品のデザイン */
-label { 
+/* 各行のレイアウト */
+.controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+/* ラベルと入力フォームのグループ化（途中で改行されないようにする） */
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 220px; /* スペースに応じて伸縮する */
+    min-width: 0; /* flexアイテムが親要素をはみ出すのを防ぐ */
+}
+
+.control-group label { 
     font-size: 13px; 
     color: #ddd; 
+    white-space: nowrap; /* ラベルの改行防止 */
 }
 
-button, select {
-    padding: 8px 14px;
+/* プルダウンメニューのデザイン */
+.control-group select {
+    width: 100%;
+    padding: 8px 12px;
     font-size: 14px;
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
@@ -68,9 +90,26 @@ button, select {
     cursor: pointer;
     transition: all 0.2s ease;
     outline: none;
+    text-overflow: ellipsis; /* 長すぎる文字を「...」で省略 */
+    white-space: nowrap;
+    overflow: hidden;
 }
 
-button:hover, select:hover {
+/* ボタンのデザイン */
+button {
+    padding: 8px 16px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    white-space: nowrap;
+}
+
+button:hover, .control-group select:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.4);
 }
@@ -88,16 +127,14 @@ select option {
     background: rgba(220, 53, 69, 0.9); 
 }
 
-/* 音量調整スライダーのスタイル追加 */
-.volume-container { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
+/* 音量スライダー固有のスタイル */
+.volume-container {
+    flex: 0 1 auto; /* スライダーは広がりすぎないように固定 */
 }
 
 input[type="range"] {
     -webkit-appearance: none;
-    width: 100px;
+    width: 120px;
     background: transparent;
 }
 
