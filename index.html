@@ -1,147 +1,191 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
     <title>Capture Viewer</title>
-    <!-- 外部のCSSファイルを読み込む設定 -->
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-    <!-- 映像表示領域 -->
-    <div id="video-container">
-        <video autoplay id="v" playsinline></video>
+<!-- 映像表示領域 -->
+<div id="video-container">
+    <video autoplay id="v" playsinline></video>
+</div>
+
+<!-- グラスモーフィズム調UI -->
+<div id="controls">
+    <label for="video-source">映像入力:</label>
+    <select id="video-source"></select>
+
+    <label for="audio-source">音声入力:</label>
+    <select id="audio-source"></select>
+
+    <label for="resolution">解像度:</label>
+    <select id="resolution">
+        <option value="1920x1080">1080p (1920x1080)</option>
+        <option value="1280x720">720p (1280x720)</option>
+        <option value="640x480">480p (640x480)</option>
+    </select>
+
+    <!-- 音量調整スライダー -->
+    <div class="volume-container">
+        <label for="volume-slider">音量:</label>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
     </div>
 
-    <!-- グラスモーフィズム調UI -->
-    <div id="controls">
-        <label for="video-source">映像入力:</label>
-        <select id="video-source"></select>
+    <button id="mute-btn">音声をオフにする</button>
+    <button id="fullscreen-btn">全画面表示</button>
+</div>
 
-        <label for="audio-source">音声入力:</label>
-        <select id="audio-source"></select>
+<script>
+    const videoElement = document.getElementById('v');
+    const videoSelect = document.getElementById('video-source');
+    const audioSelect = document.getElementById('audio-source');
+    const resolutionSelect = document.getElementById('resolution');
+    const volumeSlider = document.getElementById('volume-slider');
+    const muteBtn = document.getElementById('mute-btn');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
 
-        <label for="resolution">解像度:</label>
-        <select id="resolution">
-            <option value="1920x1080">1080p (1920x1080)</option>
-            <option value="1280x720">720p (1280x720)</option>
-            <option value="640x480">480p (640x480)</option>
-        </select>
+    let currentStream;
+    let isMuted = false;
 
-        <button id="mute-btn">音声をオフにする</button>
-        <button id="fullscreen-btn">全画面表示</button>
-    </div>
+    // ブラウザに保存された設定を読み込む関数
+    function loadSettings() {
+        const savedVideo = localStorage.getItem('capture_video');
+        const savedAudio = localStorage.getItem('capture_audio');
+        const savedResolution = localStorage.getItem('capture_resolution');
+        const savedVolume = localStorage.getItem('capture_volume');
 
-    <script>
-        const videoElement = document.getElementById('v');
-        const videoSelect = document.getElementById('video-source');
-        const audioSelect = document.getElementById('audio-source');
-        const resolutionSelect = document.getElementById('resolution');
-        const muteBtn = document.getElementById('mute-btn');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        if (savedVideo) videoSelect.value = savedVideo;
+        if (savedAudio) audioSelect.value = savedAudio;
+        if (savedResolution) resolutionSelect.value = savedResolution;
+        if (savedVolume !== null) {
+            volumeSlider.value = savedVolume;
+            videoElement.volume = parseFloat(savedVolume);
+        }
+    }
 
-        let currentStream;
-        let isMuted = false;
+    // 現在の設定を保存する関数
+    function saveSettings() {
+        localStorage.setItem('capture_video', videoSelect.value);
+        localStorage.setItem('capture_audio', audioSelect.value);
+        localStorage.setItem('capture_resolution', resolutionSelect.value);
+    }
 
-        async function getDevices() {
-            try {
-                await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                const devices = await navigator.mediaDevices.enumerateDevices();
+    async function getDevices() {
+        try {
+            await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            
+            videoSelect.innerHTML = '';
+            audioSelect.innerHTML = '';
 
-                videoSelect.innerHTML = '';
-                audioSelect.innerHTML = '';
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                
+                // デバイス名の末尾にある「(英数字:英数字)」のパターンを削除
+                let cleanLabel = device.label || '';
+                cleanLabel = cleanLabel.replace(/\s*\([a-zA-Z0-9:]+\)$/, '');
 
-                devices.forEach(device => {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    if (device.kind === 'videoinput') {
-                        option.text = device.label || `カメラ ${videoSelect.length + 1}`;
-                        videoSelect.appendChild(option);
-                    } else if (device.kind === 'audioinput') {
-                        option.text = device.label || `マイク ${audioSelect.length + 1}`;
-                        audioSelect.appendChild(option);
-                    }
-                });
-            } catch (error) {
-                console.error('デバイスの取得エラー:', error);
-                alert('カメラ・マイクへのアクセスが許可されていないか、デバイスが見つかりません。');
-            }
+                if (device.kind === 'videoinput') {
+                    option.text = cleanLabel || `カメラ ${videoSelect.length + 1}`;
+                    videoSelect.appendChild(option);
+                } else if (device.kind === 'audioinput') {
+                    option.text = cleanLabel || `マイク ${audioSelect.length + 1}`;
+                    audioSelect.appendChild(option);
+                }
+            });
+
+            // プルダウン作成後に保存済みの設定を適用
+            loadSettings();
+
+        } catch (error) {
+            console.error('デバイスの取得エラー:', error);
+            alert('カメラ・マイクへのアクセスが許可されていないか、デバイスが見つかりません。');
+        }
+    }
+
+    async function startStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
         }
 
-        async function startStream() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+        saveSettings(); // 設定が変更されるたびに保存
+
+        const videoSource = videoSelect.value;
+        const audioSource = audioSelect.value;
+        const [width, height] = resolutionSelect.value.split('x').map(Number);
+
+        const constraints = {
+            video: {
+                deviceId: videoSource ? { exact: videoSource } : undefined,
+                width: { ideal: width },
+                height: { ideal: height }
+            },
+            audio: {
+                deviceId: audioSource ? { exact: audioSource } : undefined,
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
             }
+        };
 
-            const videoSource = videoSelect.value;
-            const audioSource = audioSelect.value;
-            const [width, height] = resolutionSelect.value.split('x').map(Number);
-
-            const constraints = {
-                video: {
-                    deviceId: videoSource ? { exact: videoSource } : undefined,
-                    width: { ideal: width },
-                    height: { ideal: height }
-                },
-                audio: {
-                    deviceId: audioSource ? { exact: audioSource } : undefined,
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: false
-                }
-            };
-
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                videoElement.srcObject = currentStream;
-
-                const audioTracks = currentStream.getAudioTracks();
-                if (audioTracks.length > 0) {
-                    audioTracks[0].enabled = !isMuted;
-                }
-            } catch (error) {
-                console.error('ストリーム開始エラー:', error);
-                alert('選択した設定で映像を取得できませんでした。');
-            }
-        }
-
-        muteBtn.addEventListener('click', () => {
-            if (!currentStream) return;
-
+        try {
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            videoElement.srcObject = currentStream;
+            
             const audioTracks = currentStream.getAudioTracks();
             if (audioTracks.length > 0) {
-                isMuted = !isMuted;
                 audioTracks[0].enabled = !isMuted;
-
-                if (isMuted) {
-                    muteBtn.textContent = '音声をオンにする';
-                    muteBtn.classList.add('muted');
-                } else {
-                    muteBtn.textContent = '音声をオフにする';
-                    muteBtn.classList.remove('muted');
-                }
             }
-        });
+        } catch (error) {
+            console.error('ストリーム開始エラー:', error);
+            alert('選択した設定で映像を取得できませんでした。');
+        }
+    }
 
-        fullscreenBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                videoElement.requestFullscreen().catch(err => {
-                    alert(`全画面表示エラー: ${err.message}`);
-                });
+    // 音量スライダーを動かした際の処理
+    volumeSlider.addEventListener('input', (e) => {
+        const vol = e.target.value;
+        videoElement.volume = parseFloat(vol);
+        localStorage.setItem('capture_volume', vol); // 音量も保存
+    });
+
+    muteBtn.addEventListener('click', () => {
+        if (!currentStream) return;
+        
+        const audioTracks = currentStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+            isMuted = !isMuted;
+            audioTracks[0].enabled = !isMuted;
+            
+            if (isMuted) {
+                muteBtn.textContent = '音声をオンにする';
+                muteBtn.classList.add('muted');
             } else {
-                document.exitFullscreen();
+                muteBtn.textContent = '音声をオフにする';
+                muteBtn.classList.remove('muted');
             }
-        });
+        }
+    });
 
-        videoSelect.addEventListener('change', startStream);
-        audioSelect.addEventListener('change', startStream);
-        resolutionSelect.addEventListener('change', startStream);
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            videoElement.requestFullscreen().catch(err => {
+                alert(`全画面表示エラー: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
 
-        getDevices().then(startStream);
+    videoSelect.addEventListener('change', startStream);
+    audioSelect.addEventListener('change', startStream);
+    resolutionSelect.addEventListener('change', startStream);
 
-    </script>
+    getDevices().then(startStream);
+
+</script>
 </body>
-
 </html>
