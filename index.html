@@ -14,27 +14,35 @@
 
 <!-- グラスモーフィズム調UI -->
 <div id="controls">
-    <label for="video-source">映像入力:</label>
-    <select id="video-source"></select>
-
-    <label for="audio-source">音声入力:</label>
-    <select id="audio-source"></select>
-
-    <label for="resolution">解像度:</label>
-    <select id="resolution">
-        <option value="1920x1080">1080p (1920x1080)</option>
-        <option value="1280x720">720p (1280x720)</option>
-        <option value="640x480">480p (640x480)</option>
-    </select>
-
-    <!-- 音量調整スライダー -->
-    <div class="volume-container">
-        <label for="volume-slider">音量:</label>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
+    <!-- 上段：入力デバイスと解像度 -->
+    <div class="controls-row">
+        <div class="control-group">
+            <label for="video-source">映像入力:</label>
+            <select id="video-source"></select>
+        </div>
+        <div class="control-group">
+            <label for="audio-source">音声入力:</label>
+            <select id="audio-source"></select>
+        </div>
+        <div class="control-group">
+            <label for="resolution">解像度:</label>
+            <select id="resolution">
+                <option value="1920x1080">1080p (1920x1080)</option>
+                <option value="1280x720">720p (1280x720)</option>
+                <option value="640x480">480p (640x480)</option>
+            </select>
+        </div>
     </div>
-
-    <button id="mute-btn">音声をオフにする</button>
-    <button id="fullscreen-btn">全画面表示</button>
+    
+    <!-- 下段：操作ボタンと音量 -->
+    <div class="controls-row">
+        <div class="control-group volume-container">
+            <label for="volume-slider">音量:</label>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
+        </div>
+        <button id="mute-btn">音声をオフにする</button>
+        <button id="fullscreen-btn">全画面表示</button>
+    </div>
 </div>
 
 <script>
@@ -49,7 +57,6 @@
     let currentStream;
     let isMuted = false;
 
-    // ブラウザに保存された設定を読み込む関数
     function loadSettings() {
         const savedVideo = localStorage.getItem('capture_video');
         const savedAudio = localStorage.getItem('capture_audio');
@@ -65,7 +72,6 @@
         }
     }
 
-    // 現在の設定を保存する関数
     function saveSettings() {
         localStorage.setItem('capture_video', videoSelect.value);
         localStorage.setItem('capture_audio', audioSelect.value);
@@ -84,7 +90,6 @@
                 const option = document.createElement('option');
                 option.value = device.deviceId;
                 
-                // デバイス名の末尾にある「(英数字:英数字)」のパターンを削除
                 let cleanLabel = device.label || '';
                 cleanLabel = cleanLabel.replace(/\s*\([a-zA-Z0-9:]+\)$/, '');
 
@@ -97,7 +102,6 @@
                 }
             });
 
-            // プルダウン作成後に保存済みの設定を適用
             loadSettings();
 
         } catch (error) {
@@ -111,7 +115,7 @@
             currentStream.getTracks().forEach(track => track.stop());
         }
 
-        saveSettings(); // 設定が変更されるたびに保存
+        saveSettings(); 
 
         const videoSource = videoSelect.value;
         const audioSource = audioSelect.value;
@@ -145,11 +149,10 @@
         }
     }
 
-    // 音量スライダーを動かした際の処理
     volumeSlider.addEventListener('input', (e) => {
         const vol = e.target.value;
         videoElement.volume = parseFloat(vol);
-        localStorage.setItem('capture_volume', vol); // 音量も保存
+        localStorage.setItem('capture_volume', vol);
     });
 
     muteBtn.addEventListener('click', () => {
