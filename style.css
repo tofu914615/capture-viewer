@@ -29,7 +29,6 @@ video {
     max-height: 85%;
     object-fit: contain;
     border-radius: 8px;
-    border: 3px solid #00a8ff;
     /* 映像の縁を青色で囲う（別の色にしたい場合は #00a8ff を変更してください） */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
