@@ -22,6 +22,7 @@ function loadSettings() {
 
     if (savedVideo) videoSelect.value = savedVideo;
     if (savedAudio) audioSelect.value = savedAudio;
+    // 保存された解像度がない場合はHTML側のデフォルト(1920x1080)が適用される
     if (savedResolution) resolutionSelect.value = savedResolution;
     if (savedVolume !== null) {
         volumeSlider.value = savedVolume;
@@ -133,7 +134,7 @@ async function startStream() {
             deviceId: videoSource ? { exact: videoSource } : undefined,
             width: { ideal: width },
             height: { ideal: height },
-            aspectRatio: { ideal: width / height } // ここでアスペクト比を明示的に指定
+            aspectRatio: { ideal: width / height }
         },
         audio: {
             deviceId: audioSource ? { exact: audioSource } : undefined,
@@ -146,6 +147,10 @@ async function startStream() {
     try {
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
+        
+        // CSSを操作して、映像の表示枠を選択した解像度の比率に固定し、余分な部分をカット（cover）する
+        videoElement.style.aspectRatio = `${width} / ${height}`;
+        videoElement.style.objectFit = 'cover';
         
         const audioTracks = currentStream.getAudioTracks();
         if (audioTracks.length > 0) {
